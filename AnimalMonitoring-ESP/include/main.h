@@ -35,8 +35,8 @@
  * Uncomment if you want any special computation on accelerometer readings
  */
 // #define OUTPUT_READABLE_RAWACCEL
-#define OUTPUT_READABLE_REALACCEL
-// #define OUTPUT_READABLE_WORLDACCEL
+//#define OUTPUT_READABLE_REALACCEL
+ #define OUTPUT_READABLE_WORLDACCEL
 
 /*
  * Uncomment "OUTPUT_FIFOBUFFER" if you want just the raw buffer values
@@ -52,7 +52,7 @@
 //#define MQTT_TEST
 
 
-#define MQTT_PKT_SIZE 10 // Number of measurement packets to pack in 1 LoRa packet
+#define MQTT_PKT_SIZE 1 // Number of measurement packets to pack in 1 LoRa packet
 #define Async_MQTT
 
 

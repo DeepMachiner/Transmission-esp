@@ -13,7 +13,7 @@ class MPU
     static void sensorTask( void * pvParameters );
     static void get_core();
     static bool start();
-    static uint8_t* readPkt();
+    static char* readPkt();
     static void processPkt();
     static void printPkt();
     static void resetOffsets();

@@ -9,6 +9,7 @@
 #include <WiFi.h>
 #include <Wire.h>
 #include <EEPROM.h>
+#include<time.h>
 
 extern "C"
 {
@@ -31,7 +32,7 @@ extern bool MQTT_session;
 //timer variables
 unsigned long currentMillis;
 unsigned long previousMillis = 0; // Stores last time packet was published
-const long interval = 3000;       // Interval at which to publish sensor readings
+const long interval = 1000;       // Interval at which to publish sensor readings
 
 //MQTT and WIFI
 extern TimerHandle_t mqttReconnectTimer;
@@ -50,7 +51,7 @@ static int i2cCore = 1;
 
 // MPU
 extern int MPU_PKT_SIZE; // Size of the packet from MPU6050 in bytes
-uint8_t *MQTT_pkt = (uint8_t *)malloc(MQTT_PKT_SIZE * MPU_PKT_SIZE);
+char *MQTT_pkt = (char *)malloc(MQTT_PKT_SIZE * MPU_PKT_SIZE);
 // Which sensors used?
 #define USE_MPU
 
@@ -106,11 +107,10 @@ void loop()
   {
 
   MQTTLoop();
-  uint8_t *mpu_pkt = MPU::readPkt();
+  char *mpu_pkt = MPU::readPkt();
   //VectorInt16 a = mpu_pkt.aaAreal.x;
   currentMillis = millis();
-  Serial.print(MODULE_ID);
-  Serial.print(" mpu ");
+
     
     // improve to only xmit when changed
     // either compare to last, or keep track of when new data has been read
@@ -121,28 +121,31 @@ void loop()
     // format: MODULE_ID mpu yaw pitch roll wx wy wz rx ry rz gravx gravy gravz
     
     // Build the MQTT pkt and send if full
-    if (mpu_pkt)
+   if (mpu_pkt)
         {
 
       
-      memcpy((void *)(MQTT_pkt + MQTT_pkt_idx * MPU_PKT_SIZE), mpu_pkt, MPU_PKT_SIZE);
-      MQTT_pkt_idx += 1;
-      MQTT_pkt_idx %= MQTT_PKT_SIZE;
+     //memcpy((char *)(MQTT_pkt + MQTT_pkt_idx * MPU_PKT_SIZE), mpu_pkt, MPU_PKT_SIZE);
+     //sprintf(MQTT_pkt,",%d,",mpu_pkt);
+      //MQTT_pkt_idx += 1;
+      //MQTT_pkt_idx %= MQTT_PKT_SIZE;
 
-      if (!MQTT_pkt_idx)
-      {
+     // if (!MQTT_pkt_idx)
+      //{
         
         if (currentMillis - previousMillis >= interval)
         { 
           SerialDebugger(F("Sending pkt number "), MQTT_pkt_counter++, F(" to the server"));
-          String packet = (char*)MQTT_pkt;
+          Serial.print(MODULE_ID);
+          Serial.print(" mpu ");
+          
           //packet = packet.c_str();
-          Serial.println("Printing Packet : " + packet);
+          
           
           // Save the last time a new reading was published
           previousMillis = currentMillis;
 
-          if(MQTTPublish(Acceleration, (char*)MQTT_pkt)){
+          if(MQTTPublish(Acceleration, mpu_pkt)){
             Serial.println("Published to Server");
           }
             
@@ -150,16 +153,19 @@ void loop()
         }
 
         mpuDataCounterPrev = mpuDataCounter;
-      }
-    }
+     }
+  // }
     else
     {       
+           Serial.print("Packet Empty"); 
+           MQTTPublish(Acceleration, "DMP Initialization failed") ; 
+           delay(5000);
+           MPU::__init__();
                // not connected
       //vTaskDelay(10); // wait and feed the watchdog timer.
     }
   }
   else
-  Serial.println("Not Connected to Wifi");
-
+  WIFI_HELPER::reconnect();
 
 }

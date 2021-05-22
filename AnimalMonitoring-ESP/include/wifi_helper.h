@@ -19,11 +19,8 @@ class WIFI_HELPER{
     TimerHandle_t mqttReconnectTimer;
     TimerHandle_t wifiReconnectTimer;
     bool WIFI_connected;
-    static void connectToMqtt();
-    static void onMqttConnect(bool);
-    static void onMqttDisconnect(AsyncMqttClientDisconnectReason);
-    static void onMqttPublish(uint16_t);
-    static WIFI_HELPER mqtt__init__();
+    static void reconnect();
+    
     
     
 };

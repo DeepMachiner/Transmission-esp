@@ -49,7 +49,7 @@ void WIFI_HELPER::WiFiEvent(WiFiEvent_t event)
   case SYSTEM_EVENT_STA_DISCONNECTED:
     Serial.println("WiFi lost connection");
     w.WIFI_connected = false;
-    xTimerStop(w.mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
+    WIFI_HELPER::reconnect();
     xTimerStart(w.wifiReconnectTimer, 0);
     break;
 
@@ -107,70 +107,9 @@ void WIFI_HELPER::connectToWiFi(const char *ssid, const char *pwd)
   Serial.println("Waiting for WIFI connection...");
 }
 
-/*
-void WIFI_HELPER::connectToMqtt()
-{
-  Serial.println("Connecting to MQTT...");
-  MQTT.mqttClient.connect();
-  if(MQTT.mqttClient.connected()){
-    Serial.println("Connected to MQTT server");
-    MQTT_session = true;
-  }
-}
-
-void WIFI_HELPER::onMqttConnect(bool sessionPresent)
-{
-  Serial.println("Connected to MQTT.");
-  Serial.print("Session present: ");
-  //MQTT connected
-  //MQTT_session = true;
-
-  Serial.println(sessionPresent);
-
-//to test if the MQTT server is responding
-#ifdef MQTT_TEST
-  MQTT.mqttClient.publish(Acceleration, 0, true, "test 1");
-  Serial.println("Publishing at QoS 0");
-  uint16_t packetIdPub1 = MQTT.mqttClient.publish(Acceleration, 1, true, "test 2");
-  Serial.print("Publishing at QoS 1, packetId: ");
-  Serial.println(packetIdPub1);
-  uint16_t packetIdPub2 = MQTT.mqttClient.publish(Gyroscope, 2, true, "test 3");
-  Serial.print("Publishing at QoS 2, packetId: ");
-  Serial.println(packetIdPub2);
-#endif
-}
-
-void WIFI_HELPER::onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
-{
-  Serial.println("Disconnected from MQTT.");
-  //Serial.println(reason);
-  MQTT_session = false;
-  if (WiFi.isConnected())
-  {
-    xTimerStart(mqttReconnectTimer, 0);
-  }
-}
-
-void WIFI_HELPER::onMqttPublish(uint16_t packetId)
-{
-  Serial.print("Publish acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
-}
-
-WIFI_HELPER WIFI_HELPER::mqtt__init__()
-{
-  //connect to wifi
-  WIFI_HELPER::connectToWiFi(WIFI_SSID, WIFI_PASSWORD);
-
+void WIFI_HELPER::reconnect(){
+  Serial.print("Reconnecting to WIFI.................");
+  WiFi.reconnect();
+  w.WIFI_connected = true;
   
-  //event handles for MQTT functions
-  MQTT.mqttClient.onConnect(WIFI_HELPER::onMqttConnect);
-  MQTT.mqttClient.onDisconnect(WIFI_HELPER::onMqttDisconnect);
-  MQTT.mqttClient.onPublish(WIFI_HELPER::onMqttPublish);
-
-  // credentials for mqtt broker
-  MQTT.mqttClient.setServer(MQTT_HOST, MQTT_PORT);
-  MQTT.mqttClient.setCredentials(MQTT_USERNAME, MQTT_KEY);
-    
-}*/
+}

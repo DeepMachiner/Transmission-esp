@@ -6,6 +6,8 @@
 
 #include <Wire.h>
 #include <EEPROM.h>
+#include <ArduinoJson.h>
+
 
 extern "C"
 {
@@ -127,6 +129,11 @@ float ypr[3];        // [yaw, pitch, roll]   yaw/pitch/roll container and gravit
 // packet structure for InvenSense teapot demo
 uint8_t teapotPacket[14] = {'$', 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0x00, 0x00, '\r', '\n'};
 #endif
+
+//JSon objects
+char buf[50];
+StaticJsonDocument<300> jsonBuffer;
+JsonObject root = jsonBuffer.as<JsonObject>();
 
 // ==================================================
 
@@ -363,7 +370,7 @@ void MPU::printPkt()
 #endif
 
 #ifdef OUTPUT_READABLE_WORLDACCEL
-  Serial.print("aworld\t");
+  Serial.print("\t");
   Serial.print(mpu_pkt.aaWorld.x);
   Serial.print("\t");
   Serial.print(mpu_pkt.aaWorld.y);
@@ -428,7 +435,12 @@ void MPU::processPkt()
   mpu.dmpGetGravity(&gravity, &q);
   mpu.dmpGetAccel(&aa, fifoBuffer);              // Real Acceleration
   mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity); // Acceleration components with gravity removed
-  memcpy(&(mpu_pkt.aaReal), &aaReal, sizeof(VectorInt16));
+   memset(buf, 0, sizeof(buf));
+    root["X"] =  aaReal.x;
+    root["Y"] =  aaReal.y;
+    root["Z"] =  aaReal.z;
+  serializeJson(root,buf,sizeof(buf));
+ memcpy(&(mpu_pkt.aaReal), &aaReal, sizeof(VectorInt16));
 #endif
 
 // components with gravity removed and adjusted for the world frame of
@@ -445,6 +457,13 @@ void MPU::processPkt()
   mpu.dmpGetAccel(&aa, fifoBuffer);                    // Real Acceleration
   mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);       // Acceleration components with gravity removed
   mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q); // Acceleration components with gravity removed and converted back to world frame
+  //memset(buf, 0, sizeof(buf));
+    //root["X"] =  aaWorld.x;
+    //root["Y"] =  aaWorld.y;
+    //oot["Z"] =  aaWorld.z;
+  //serializeJson(root,buf,sizeof(buf));
+  memset(buf, 0, sizeof(buf));
+  sprintf(buf,"%d,%d,%d",aaWorld.x,aaWorld.y,aaWorld.z);
   memcpy(&(mpu_pkt.aaWorld), &aaWorld, sizeof(VectorInt16));
 #endif
 
@@ -460,8 +479,9 @@ void MPU::processPkt()
 #endif
 }
 
-uint8_t *MPU::readPkt()
+char *MPU::readPkt()
 {
+ 
   // Depends if the DMP is turned on or off right now!
   if (!dmpReady)
   {
@@ -516,8 +536,8 @@ uint8_t *MPU::readPkt()
       Serial.write(teapotPacket, 14);
 #else
       processPkt();
-      return (uint8_t *)&mpu_pkt.aaReal.x;
-      Serial.print(mpu_pkt.aaReal.x);
+      return (char *)&buf;
+      //Serial.print(mpu_pkt);
 
       //new return type
 
