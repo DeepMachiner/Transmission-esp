@@ -9,12 +9,6 @@
 #include <ArduinoJson.h>
 
 
-extern "C"
-{
-#include "freertos/FreeRTOS.h"
-#include "freertos/timers.h"
-}
-
 // ================== USER CONFIG ==================
 
 // Module ID

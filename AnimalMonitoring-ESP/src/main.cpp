@@ -10,13 +10,6 @@
 #include <Wire.h>
 #include <EEPROM.h>
 #include<time.h>
-
-extern "C"
-{
-#include "freertos/FreeRTOS.h"
-#include "freertos/timers.h"
-}
-
 #include <PubSubClient.h>
 
 
