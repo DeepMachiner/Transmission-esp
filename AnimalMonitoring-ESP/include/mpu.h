@@ -17,6 +17,7 @@ class MPU
     static void processPkt();
     static void printPkt();
     static void resetOffsets();
+    static void MPUreset();
 };
 
 

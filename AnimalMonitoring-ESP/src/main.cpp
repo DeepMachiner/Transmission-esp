@@ -52,6 +52,7 @@ static int i2cCore = 1;
 // MPU
 extern int MPU_PKT_SIZE; // Size of the packet from MPU6050 in bytes
 char *MQTT_pkt = (char *)malloc(MQTT_PKT_SIZE * MPU_PKT_SIZE);
+int emptycounter;
 // Which sensors used?
 #define USE_MPU
 
@@ -74,9 +75,6 @@ void setup()
 #endif
 
   nodeID = EEPROM.read(0);
-
-  //mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(WIFI_HELPER::connectToMqtt));
-  //wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(WIFI_HELPER::connectToWiFi));
 
   // configure LED for output
   pinMode(LED_PIN, OUTPUT);
@@ -101,68 +99,65 @@ void setup()
 void loop()
 {
  
-  //MQTTPublish(Acceleration, "test maqiatto");
+ 
 
   if (w.WIFI_connected)
   {
 
   MQTTLoop();
   char *mpu_pkt = MPU::readPkt();
-  //VectorInt16 a = mpu_pkt.aaAreal.x;
   currentMillis = millis();
 
     
-    // improve to only xmit when changed
-    // either compare to last, or keep track of when new data has been read
-    // when new data increment a global counter. check here if different from last read
-    // if so, send packet and update previousCounter val.
-    // use separate counters for each sensor.
-
-    // format: MODULE_ID mpu yaw pitch roll wx wy wz rx ry rz gravx gravy gravz
-    
+ 
     // Build the MQTT pkt and send if full
    if (mpu_pkt)
         {
+          //reset every time a packet is sent
+          emptycounter = 0;
 
       
-     //memcpy((char *)(MQTT_pkt + MQTT_pkt_idx * MPU_PKT_SIZE), mpu_pkt, MPU_PKT_SIZE);
-     //sprintf(MQTT_pkt,",%d,",mpu_pkt);
-      //MQTT_pkt_idx += 1;
-      //MQTT_pkt_idx %= MQTT_PKT_SIZE;
+     //packet format nodeID,Ax,Ay,Az
+     sprintf(MQTT_pkt,",%d,%s",nodeID,mpu_pkt);
+      MQTT_pkt_idx += 1;
+      MQTT_pkt_idx %= MQTT_PKT_SIZE;
 
-     // if (!MQTT_pkt_idx)
-      //{
+     if (!MQTT_pkt_idx)
+      {
         
-        if (currentMillis - previousMillis >= interval)
-        { 
+        //if (currentMillis - previousMillis >= interval)
+        //{ 
           SerialDebugger(F("Sending pkt number "), MQTT_pkt_counter++, F(" to the server"));
           Serial.print(MODULE_ID);
           Serial.print(" mpu ");
           
-          //packet = packet.c_str();
-          
+                 
           
           // Save the last time a new reading was published
           previousMillis = currentMillis;
 
-          if(MQTTPublish(Acceleration, mpu_pkt)){
+          if(MQTTPublish(Acceleration, MQTT_pkt)){
             Serial.println("Published to Server");
           }
             
           mpuDataCounter++;
-        }
+      //  }
 
         mpuDataCounterPrev = mpuDataCounter;
      }
-  // }
+   }
     else
-    {       
+    {      //packet is empty
            Serial.print("Packet Empty"); 
-           MQTTPublish(Acceleration, "DMP Initialization failed") ; 
+           emptycounter++;
            delay(5000);
-           MPU::__init__();
-               // not connected
-      //vTaskDelay(10); // wait and feed the watchdog timer.
+           // if more than x number of empty packets from mpu, reset MPU or restart the board
+           if(emptycounter > 5)
+           {
+             MQTTPublish(Acceleration, "Error code 1,resetting board");
+           MPU::MPUreset();
+           }
+               
     }
   }
   else
